@@ -22,8 +22,8 @@ class AuctionItem(models.Model):
         return f"{self.title} - Rs.{self.current_price}"
     
 class Bid(models.Model):
-    auction_item = models.ForeignKey(AuctionItem, on_delete=models.CASCADE, related_name='bids')
-    bidder = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    item = models.ForeignKey(AuctionItem, on_delete=models.CASCADE, related_name='bids')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
 

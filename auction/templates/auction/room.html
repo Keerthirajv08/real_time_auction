@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auction Room</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px;}
+        .box { border: 1px solid #ddd; padding: 20px; margin-top: 20px; }
+        #log { background: #f0f0f0; height:200px;  overflow-y: scroll; padding: 10px; border:1px solid #ccc;}
+        .success { color: green;}
+        .error { color: red;}
+    </style>
+</head>
+<body>
+    <h1>Auction Item #<span id="room-name">{{ room_name }}</span></h1>
+    <h2>Current Price: Rs.<span id="price">Fetching...</span></h2>
+
+    <div class="box">
+        <h3>Place your bid</h3>
+        <input type="number" id="bid-amount" placeholder="Enter amount (e.g. 150.00)">
+        <button onclick="submitBid()">Place Bid</button>
+        <p id="status-msg"></p>
+    </div>
+
+    <h3>Live Activity</h3>
+    <div id="log"></div>
+
+    {% csrf_token %}
+
+    <script>
+        const roomName = "{{ room_name }}";
+        const logDiv = document.querySelector('#log');
+        const priceSpan = document.querySelector('#price');
+        const statusMsg = document.querySelector('status-msg');
+
+        const chatSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/auction/' + roomName + '/'
+        );
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+
+            //document.querySelector('#price').innerText = data.new_price;
+            priceSpan.innerText = data.new_price;
+
+            //const log = document.querySelector('#log');
+            //log.innerHTML += '<div>' + data.message + '<div>';
+            
+            const msg = document.createElement('div');
+            msg.innerText = `[${new Date().toLocaleTimeString()}] ${data.message}`;
+            logDiv.prepend(msg);
+        };
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        function submitBid() {
+            const amountInput = document.getElementById('bid-amount');
+            const amount = amountInput.value;
+
+            const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            const csrftoken = csrfInput ? csrfInput.value : '';
+
+            if (!csrftoken) {
+                statusMsg.innerText = "Error: CSRF TOKEN MISSING. check template.";
+                statusMsg.className = "error";
+                return;
+            }
+
+            const statusMsg = document.getElementById('status-msg');
+
+            fetch(`/auction/api/bid/${roomName}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken' : csrftoken
+                },
+                body: JSON.stringify({ 'amount': amount})
+            })
+            .then(async response => {
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    const text = await response.text();
+                    throw new Error("Server returned non-JSON error (Check Terminal): " + response.status);
+                }
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw data;
+                } 
+                return data;
+            })
+            .then(data => {
+                statusMsg.innerText = "Bid placed successfully";
+                statusMsg.className = "success";
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                //Display the actual error message
+                statusMsg.innerText = error.message || error.error || "Something went wrong";
+                statusMsg.className = "error";
+            });
+        }
+        //chatSocket.onclose = function(e) {
+            //console.error('Chat socket closed unexpectedly');
+        //};
+    </script>
+</body>
+</html>
+
