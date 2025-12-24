@@ -8,7 +8,7 @@ class AuctionConsumer(WebsocketConsumer):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f'auction_{self.room_name}'
 
-        print(f"DEBUG: User connected to Group: {self.room_group_name}")
+        #print(f"DEBUG: User connected to Group: {self.room_group_name}")
 
         async_to_sync(self.channel_layer.group_add)(
             self.room_group_name,
@@ -24,12 +24,16 @@ class AuctionConsumer(WebsocketConsumer):
         )
     
     def auction_message(self, event):
-        message = event['message']
+        message = event.get('message', '')
         new_price = event['new_price']
+        new_end_time = event.get('new_end_time', None)
 
         self.send(text_data=json.dumps({
             'message': message,
-            'new_price': str(new_price)
+            'new_price': str(new_price),
+            'new_end_time': new_end_time
         }))
 
-        
+
+
+       

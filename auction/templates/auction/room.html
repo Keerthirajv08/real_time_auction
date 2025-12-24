@@ -13,6 +13,7 @@
 <body>
     <h1>Auction Item #<span id="room-name">{{ room_name }}</span></h1>
     <h2>Current Price: Rs.<span id="price">Fetching...</span></h2>
+    <h3>Time Remaining: <span id="timer" style="color: red; font-weight: bold;">Loading...</span></h3>
 
     <div class="box">
         <h3>Place your bid</h3>
@@ -22,15 +23,21 @@
     </div>
 
     <h3>Live Activity</h3>
-    <div id="log"></div>
+    <div id="log" style="height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;"></div>
 
     {% csrf_token %}
 
     <script>
         const roomName = "{{ room_name }}";
         const logDiv = document.querySelector('#log');
+        const timerSpan = document.getElementById('timer');
         const priceSpan = document.querySelector('#price');
         const statusMsg = document.querySelector('status-msg');
+
+        let endTime = new Date("{{ item.end_time|date:'c' }}").getTime();
+        //const timerSpan = document.getElementById('timer');
+        const bidBtn = document.querySelector('button');
+        const bidInput = document.getElementById('bid-amount');
 
         const chatSocket = new WebSocket(
             'ws://' + window.location.host + '/ws/auction/' + roomName + '/'
@@ -42,17 +49,67 @@
             //document.querySelector('#price').innerText = data.new_price;
             priceSpan.innerText = data.new_price;
 
+            if (data.new_end_time) {
+                endTime = new Date(data.new_end_time).getTime();
+
+                const timerSpan = document.getElementById('timer');
+                timerSpan.style.color = "orange";
+                setTimeout(() => {timerSpan.style.color = "red"}, 1000);
+
+                document.querySelector('button').disabled = false;
+                document.getElementById('bid-amount').disabled = false;
+                document.querySelector('button').innerText = "Place Bid";
+            }
+           
             //const log = document.querySelector('#log');
             //log.innerHTML += '<div>' + data.message + '<div>';
+
+            if (data.message) {
+                const msgDiv = document.createElement('div');
+                const timeStr = new Date().toLocaleTimeString();
+                msgDiv.innerText = `[${timeStr}] ${data.message}`;
+
+                const logBox = document.querySelector('#log');
+                if (logBox) {
+                    logBox.prepend(msgDiv);
+                } else {
+                    console.error("Could not find <div id='log'>");
+                }
+            }
             
-            const msg = document.createElement('div');
-            msg.innerText = `[${new Date().toLocaleTimeString()}] ${data.message}`;
-            logDiv.prepend(msg);
+            //const msg = document.createElement('div');
+            //msg.innerText = `[${new Date().toLocaleTimeString()}] ${data.message}`;
+            //logDiv.prepend(msg);
         };
 
         chatSocket.onclose = function(e) {
             console.error('Chat socket closed unexpectedly');
         };
+       
+
+        function updateTimer() {
+            const now = new Date().getTime();
+            const distance = endTime - now;
+
+            if (distance < 0) {
+                clearInterval(timerInterval);
+                timerSpan.innerText = "EXPIRED";
+                timerSpan.style.color = "gray";
+                bidBtn.disabled = true;
+                bidInput.disabled = true;
+                bidBtn.innerText = "Auction closed";
+                return;
+            }
+
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60 )) / 1000);
+
+            timerSpan.innerText = minutes + "m " + seconds + "s ";
+        }
+
+        const timerInterval = setInterval(updateTimer, 1000);
+
+        updateTimer();
 
         function submitBid() {
             const amountInput = document.getElementById('bid-amount');
@@ -101,11 +158,14 @@
                 statusMsg.innerText = error.message || error.error || "Something went wrong";
                 statusMsg.className = "error";
             });
-        }
+        }      
+        
         //chatSocket.onclose = function(e) {
             //console.error('Chat socket closed unexpectedly');
         //};
     </script>
 </body>
 </html>
+
+
 
