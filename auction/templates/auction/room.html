@@ -22,8 +22,38 @@
         <p id="status-msg"></p>
     </div>
 
+    {% if not item.is_active %}
+        <div style="padding: 20px; text-align: center; margin-bottom: 20px; border-radius: 8px; 
+            {% if item.highest_bidder == request.user %}
+                background-color: #d4edda; color: #155724; border: 2px solid #c3e6cb;
+            {% else %}
+                background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb;
+            {% endif %}">
+            
+            <h1>Auction Closed</h1>
+            {% if item.highest_bidder == request.user %}
+                <h2>🎉 CONGRATULATIONS! YOU WON! 🎉</h2>
+                <p>You secured this item for <strong>Rs.{{ item.current_price }}</strong></p>
+            {% else %}
+                <h3>Winner: {{ item.highest_bidder.username|default:"No one" }}</h3>
+                <p>Better luck next time!</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+
     <h3>Live Activity</h3>
-    <div id="log" style="height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;"></div>
+    <div id="log" style="height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;">
+        {% for bid in previous_bids %}
+            <div style="color:#555; border: bottom 1px solid #eee;">
+                <small>[{{ bid.timestamp|date:"H:i:s" }}]</small>
+                <strong>{{ bid.user.username}}  </strong>bidded   Rs.{{bid.amount}}
+            </div>
+        {% empty %}
+            <div style="color:gray; font-style: italic; ">No bids yet. Be the first to bid!</div>
+        {% endfor %}
+    </div>
+
 
     {% csrf_token %}
 
@@ -86,7 +116,6 @@
             console.error('Chat socket closed unexpectedly');
         };
        
-
         function updateTimer() {
             const now = new Date().getTime();
             const distance = endTime - now;

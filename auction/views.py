@@ -17,9 +17,14 @@ def index(request):
 def room(request, room_name):
     item = get_object_or_404(AuctionItem, id=room_name)
 
+    item.check_expiration()
+
+    previous_bids = item.bids.all().order_by('-timestamp')[:10]
+
     return render(request, 'auction/room.html',
                   {'room_name': room_name,
-                   'item': item
+                   'item': item,
+                   'previous_bids': previous_bids
                    })
 
 @login_required
@@ -72,7 +77,6 @@ def place_bid(request, item_id):
                 'new_end_time': item.end_time.isoformat()
             }
         )
-
 
     return JsonResponse({'status': 'success', 'new_price': new_amount})
 

@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 # Create your models here.
 class AuctionItem(models.Model):
@@ -20,6 +21,13 @@ class AuctionItem(models.Model):
 
     def __str__(self):
         return f"{self.title} - Rs.{self.current_price}"
+    
+    def check_expiration(self):
+        if self.is_active and timezone.now() > self.end_time:
+            self.is_active = False
+            self.save()
+            return True
+        return False
     
 class Bid(models.Model):
     item = models.ForeignKey(AuctionItem, on_delete=models.CASCADE, related_name='bids')
