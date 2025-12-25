@@ -71,17 +71,24 @@ def place_bid(request, item_id):
         channel_layer = get_channel_layer()
         group_name = f'auction_{item.id}'
 
-        #print(f"DEBUG: User is in Group: {group_name}")
 
         async_to_sync(channel_layer.group_send)(
-            group_name,
+            f'auction_{item_id}',
             {
                 'type': 'auction_message',
-                'message': f"{request.user.username} placed a bid of Rs.{new_amount}.",
+                'message': f'{request.user.username} placed a bid of Rs.{new_amount}.',
                 'message': f'New high bid: Rs.{new_amount}',
                 'new_price': item.current_price,
-
                 'new_end_time': item.end_time.isoformat()
+            }
+        )
+
+        async_to_sync(channel_layer.group_send)(
+            'lobby',
+            {
+                'type': 'lobby_update',
+                'item_id': item_id,
+                'new_price': new_amount,
             }
         )
 

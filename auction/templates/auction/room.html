@@ -12,9 +12,9 @@
 </head>
 <body>
     <a href="{% url 'index' %}" style="text-decoration: none; font-size: 20px;">🏠 Back to Lobby</a>
-    <h1>Auction Item #<span id="room-name">{{ room_name }}</span></h1>
+    <h1>Auction Item #<span id="room-name">{{ room_name }} </span>-  {{ item.title }}</h1>
     <h2>Current Price: Rs.<span id="price">Fetching...</span></h2>
-    <h3>Time Remaining: <span id="timer" style="color: red; font-weight: bold;">Loading...</span></h3>
+    <h3>Time Remaining: <span id="timer" style="color: red; font-weight: bold;">{{item.timeuntil}}</span></h3>
 
     <div class="box">
         <h3>Place your bid</h3>
@@ -22,6 +22,12 @@
         <button onclick="submitBid()">Place Bid</button>
         <p id="status-msg"></p>
     </div>
+
+    <hr>
+    <h3>Chat</h3>
+    <input id="chat-input" type="text" placeholder="Type a message..." style="width:70%; padding:5px;">
+    <button id="chat-submit" style="padding: 5px;">Send</button>
+
 
     {% if not item.is_active %}
         <div style="padding: 20px; text-align: center; margin-bottom: 20px; border-radius: 8px; 
@@ -42,6 +48,7 @@
         </div>
     {% endif %}
 
+    
 
     <h3>Live Activity</h3>
     <div id="log" style="height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;">
@@ -57,66 +64,97 @@
 
 
     {% csrf_token %}
+    
 
     <script>
+        // --- 1. GLOBAL VARIABLES (Define these first!) ---
         const roomName = "{{ room_name }}";
-        const logDiv = document.querySelector('#log');
         const timerSpan = document.getElementById('timer');
-        const priceSpan = document.querySelector('#price');
-        const statusMsg = document.querySelector('status-msg');
-
-        let endTime = new Date("{{ item.end_time|date:'c' }}").getTime();
-        //const timerSpan = document.getElementById('timer');
         const bidBtn = document.querySelector('button');
         const bidInput = document.getElementById('bid-amount');
+        
+        // Chat Variables (Fixing your error)
+        const chatInput = document.querySelector('#chat-input');
+        const chatSubmit = document.querySelector('#chat-submit');
 
+        // Timer Variable
+        let endTime = new Date("{{ item.end_time|date:'c' }}").getTime();
+
+        // --- 2. WEBSOCKET SETUP ---
         const chatSocket = new WebSocket(
             'ws://' + window.location.host + '/ws/auction/' + roomName + '/'
         );
 
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
+            console.log("Data Received:", data);
 
-            //document.querySelector('#price').innerText = data.new_price;
-            priceSpan.innerText = data.new_price;
+            // A. Handle Chat Messages
+            if (data.type === 'chat') {
+                const msgDiv = document.createElement('div');
+                msgDiv.innerHTML = `<strong><span style="color: blue;">${data.username}:</span></strong> ${data.message}`;
+                document.querySelector('#log').prepend(msgDiv);
+                return; 
+            }
 
+            // B. Handle Status Updates (Join/Leave)
+            if (data.type === 'status_update') {
+                const msgDiv = document.createElement('div');
+                msgDiv.style.color = 'gray';
+                msgDiv.style.fontStyle = 'italic';
+                if (data.status === 'joined') {
+                    msgDiv.innerText = `👋 ${data.username} joined`;
+                } else {
+                    msgDiv.innerText = `🚪 ${data.username} left`;
+                }
+                document.querySelector('#log').prepend(msgDiv);
+                return;
+            }
+
+            // C. Update Price
+            if (data.new_price) {
+                document.querySelector('#price').innerText = data.new_price;
+            }
+
+            // D. Update Timer (Anti-Sniping)
             if (data.new_end_time) {
                 endTime = new Date(data.new_end_time).getTime();
-
-                const timerSpan = document.getElementById('timer');
                 timerSpan.style.color = "orange";
-                setTimeout(() => {timerSpan.style.color = "red"}, 1000);
-
-                document.querySelector('button').disabled = false;
-                document.getElementById('bid-amount').disabled = false;
-                document.querySelector('button').innerText = "Place Bid";
             }
-           
-            //const log = document.querySelector('#log');
-            //log.innerHTML += '<div>' + data.message + '<div>';
 
+            // E. Update Log (Bids)
             if (data.message) {
                 const msgDiv = document.createElement('div');
-                const timeStr = new Date().toLocaleTimeString();
-                msgDiv.innerText = `[${timeStr}] ${data.message}`;
-
-                const logBox = document.querySelector('#log');
-                if (logBox) {
-                    logBox.prepend(msgDiv);
-                } else {
-                    console.error("Could not find <div id='log'>");
-                }
+                msgDiv.innerText = `[${new Date().toLocaleTimeString()}] ${data.message}`;
+                document.querySelector('#log').prepend(msgDiv);
             }
-            
-            //const msg = document.createElement('div');
-            //msg.innerText = `[${new Date().toLocaleTimeString()}] ${data.message}`;
-            //logDiv.prepend(msg);
         };
 
-        chatSocket.onclose = function(e) {
-            console.error('Chat socket closed unexpectedly');
-        };
-       
+        // --- 3. CHAT LOGIC (The Fixed Part) ---
+        if (chatInput && chatSubmit) {
+            chatSubmit.onclick = function(e) {
+                const message = chatInput.value;
+                if (message) {
+                    // Send JSON to Python
+                    chatSocket.send(JSON.stringify({
+                        'type': 'chat_message',
+                        'message': message
+                    }));
+                    chatInput.value = ''; // Clear box
+                }
+            };
+
+            // Send on Enter key
+            chatInput.onkeyup = function(e) {
+                if (e.keyCode === 13) {
+                    chatSubmit.click();
+                }
+            };
+        } else {
+            console.error("ERROR: Chat elements not found. Check HTML IDs.");
+        }
+
+        // --- 4. TIMER FUNCTION ---
         function updateTimer() {
             const now = new Date().getTime();
             const distance = endTime - now;
@@ -125,75 +163,37 @@
                 clearInterval(timerInterval);
                 timerSpan.innerText = "EXPIRED";
                 timerSpan.style.color = "gray";
-                bidBtn.disabled = true;
-                bidInput.disabled = true;
-                bidBtn.innerText = "Auction closed";
+                if(bidBtn) bidBtn.disabled = true;
+                if(bidInput) bidInput.disabled = true;
                 return;
             }
 
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60 )) / 1000);
-
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
             timerSpan.innerText = minutes + "m " + seconds + "s ";
         }
 
+        // Start Timer
         const timerInterval = setInterval(updateTimer, 1000);
+        updateTimer(); 
 
-        updateTimer();
-
+        // --- 5. SUBMIT BID FUNCTION ---
         function submitBid() {
-            const amountInput = document.getElementById('bid-amount');
-            const amount = amountInput.value;
-
+            // ... (Keep your existing submitBid code here) ...
+            const amount = bidInput.value;
             const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
             const csrftoken = csrfInput ? csrfInput.value : '';
-
-            if (!csrftoken) {
-                statusMsg.innerText = "Error: CSRF TOKEN MISSING. check template.";
-                statusMsg.className = "error";
-                return;
-            }
-
-            const statusMsg = document.getElementById('status-msg');
-
+            
+            // ... paste the rest of your fetch code ...
             fetch(`/auction/api/bid/${roomName}/`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken' : csrftoken
-                },
-                body: JSON.stringify({ 'amount': amount})
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+                body: JSON.stringify({ 'amount': amount })
             })
-            .then(async response => {
-                const contentType = response.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    const text = await response.text();
-                    throw new Error("Server returned non-JSON error (Check Terminal): " + response.status);
-                }
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw data;
-                } 
-                return data;
-            })
-            .then(data => {
-                statusMsg.innerText = "Bid placed successfully";
-                statusMsg.className = "success";
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                //Display the actual error message
-                statusMsg.innerText = error.message || error.error || "Something went wrong";
-                statusMsg.className = "error";
-            });
-        }      
-        
-        //chatSocket.onclose = function(e) {
-            //console.error('Chat socket closed unexpectedly');
-        //};
+            // ... handle response ...
+        }
     </script>
+    
 </body>
 </html>
 

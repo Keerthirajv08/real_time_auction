@@ -17,7 +17,7 @@
         {% for item in active_auctions %}
             <div class="card">
                 <h3>{{ item.title }} <span class="badge">LIVE</span></h3>
-                <P>Current Price: <span class="price">Rs.{{ item.current_price }} </span></P>
+                <P>Current Price: <span id="price-{{ item.id }}" class="price">Rs.{{ item.current_price }} </span></P>
                 <p>Ends: {{item.end_time|timeuntil }}</p>
                 <a href="{% url 'room' item.id %}" class="btn">Join Room</a>
             </div>
@@ -41,5 +41,32 @@
             <p>No closed auctions yet.</p>
         {% endfor %}
     </div>
+
+    <script>
+        const lobbySocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/lobby/'
+        );
+
+        lobbySocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log("Lobby Update:", data);
+
+            const priceTag = document.getElementById('price-' + data.item_id);
+
+            if (priceTag) {
+                priceTag.innerText = "Rs." + data.new_price;
+
+                const originalColor = priceTag.style.color;
+                priceTag.style.color = "#00ff00";
+                priceTag.style.transition = "color 0.5s";
+
+                setTimeout(() => {
+                    priceTag.style.color = "";
+                }, 500);
+            }
+        };
+
+    </script>
 </body>
 </html>
+
