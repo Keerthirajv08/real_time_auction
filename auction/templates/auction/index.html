@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auction Lobby</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f4;}
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap:20px;}
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+        .price { font-size: 1.5em; color: #28a745; font-weight: bold;}
+        .btn { display: inline-block; padding: 10px 20px; background: #007bff; color:white; text-decoration: none; border-radius: 5px; margin-top: 10px;}
+        .badge {background: red; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;}
+    </style>
+</head>
+<body>
+    <h1>🔥 Live Auctions</h1>
+    <div class="grid">
+        {% for item in active_auctions %}
+            <div class="card">
+                <h3>{{ item.title }} <span class="badge">LIVE</span></h3>
+                <P>Current Price: <span class="price">Rs.{{ item.current_price }} </span></P>
+                <p>Ends: {{item.end_time|timeuntil }}</p>
+                <a href="{% url 'room' item.id %}" class="btn">Join Room</a>
+            </div>
+        {% empty %}
+            <p>No live auctions currently.</p>
+        {% endfor %}
+    </div>
+
+    <hr style="margin: 40px 0;">
+
+    <h2 style="color: gray;">📆 Recent History</h2>
+    <div class="grid">
+        {% for item in closed_auctions %}
+            <div class="card" style="opacity:0.7;">
+                <h3>{{ item.title }} (closed)</h3>
+                <p>Sold for: Rs.{{ item.current_price }}</p>
+                <p>Winner: {{ item.highest_bidder.username|default:"No One" }}</p>
+                <a href="{% url 'room' item.id %}" class="btn" style="background: gray;">View Results</a>
+            </div>
+        {% empty %}
+            <p>No closed auctions yet.</p>
+        {% endfor %}
+    </div>
+</body>
+</html>

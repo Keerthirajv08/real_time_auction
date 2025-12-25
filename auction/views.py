@@ -12,7 +12,14 @@ from .models import AuctionItem, Bid
 
 # Create your views here.
 def index(request):
-    return render(request, 'auction/index.html')
+    active_auctions = AuctionItem.objects.filter(is_active=True).order_by('end_time')
+
+    closed_auctions = AuctionItem.objects.filter(is_active=False).order_by('-end_time')[:5]
+
+    return render(request, 'auction/index.html',{
+        'active_auctions': active_auctions,
+        'closed_auctions': closed_auctions
+    })
 
 def room(request, room_name):
     item = get_object_or_404(AuctionItem, id=room_name)
