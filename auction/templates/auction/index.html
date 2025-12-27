@@ -14,11 +14,11 @@
 <body>
     <h1>🔥 Live Auctions</h1>
     <div class="grid">
-        {% for item in active_auctions %}
+        {% for auction in active_auctions %}
             <div class="card">
-                <h3>{{ item.title }} <span class="badge">LIVE</span></h3>
-                <P>Current Price: <span id="price-{{ item.id }}" class="price">Rs.{{ item.current_price }} </span></P>
-                <p>Ends: {{item.end_time|timeuntil }}</p>
+                <h3>{{ auction.title }} <span class="badge">LIVE</span></h3>
+                <P>Current Price: <span id="price-{{ item.id }}" class="price">Rs.{{ auction.current_price }} </span></P>
+                <p>Ends: {{auction.end_time|timeuntil }}</p>
                 <a href="{% url 'room' item.id %}" class="btn">Join Room</a>
             </div>
         {% empty %}
@@ -30,11 +30,11 @@
 
     <h2 style="color: gray;">📆 Recent History</h2>
     <div class="grid">
-        {% for item in closed_auctions %}
+        {% for auction in closed_auctions %}
             <div class="card" style="opacity:0.7;">
-                <h3>{{ item.title }} (closed)</h3>
-                <p>Sold for: Rs.{{ item.current_price }}</p>
-                <p>Winner: {{ item.highest_bidder.username|default:"No One" }}</p>
+                <h3>{{ auction.title }} (closed)</h3>
+                <p>Sold for: Rs.{{ auction.current_price }}</p>
+                <p>Winner: {{ auction.highest_bidder.username|default:"No One" }}</p>
                 <a href="{% url 'room' item.id %}" class="btn" style="background: gray;">View Results</a>
             </div>
         {% empty %}
@@ -51,7 +51,7 @@
             const data = JSON.parse(e.data);
             console.log("Lobby Update:", data);
 
-            const priceTag = document.getElementById('price-' + data.item_id);
+            const priceTag = document.getElementById('price-' + data.auction_id);
 
             if (priceTag) {
                 priceTag.innerText = "Rs." + data.new_price;
@@ -69,4 +69,5 @@
     </script>
 </body>
 </html>
+
 

@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.utils import timezone
@@ -7,14 +7,17 @@ from datetime import timedelta
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import json
-from .models import AuctionItem, Bid
+from .models import Auction, Bid
 
 
 # Create your views here.
 def index(request):
-    active_auctions = AuctionItem.objects.filter(is_active=True).order_by('end_time')
+    #active_auctions = AuctionItem.objects.filter(is_active=True).order_by('end_time')
+    
+    active_auctions = Auction.objects.filter(status='active').order_by('end_time')
 
-    closed_auctions = AuctionItem.objects.filter(is_active=False).order_by('-end_time')[:5]
+    #closed_auctions = AuctionItem.objects.filter(is_active=False).order_by('-end_time')[:5]
+    closed_auctions = Auction.objects.filter(status='closed').order_by('-end_time')[:5]
 
     return render(request, 'auction/index.html',{
         'active_auctions': active_auctions,
@@ -22,15 +25,16 @@ def index(request):
     })
 
 def room(request, room_name):
-    item = get_object_or_404(AuctionItem, id=room_name)
+    auction = get_object_or_404(Auction, id=room_name)
 
-    item.check_expiration()
+    if auction.status == 'active' and timezone.now() > auction.end_time:
+        pass
 
-    previous_bids = item.bids.all().order_by('-timestamp')[:10]
+    previous_bids = auction.bids.filter(status='accepted').order_by('-timestamp')[:10]
 
     return render(request, 'auction/room.html',
                   {'room_name': room_name,
-                   'item': item,
+                   'item': auction,
                    'previous_bids': previous_bids
                    })
 
@@ -39,62 +43,55 @@ def place_bid(request, item_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'Only POST allowed.'}, status=405)
     
-    data = json.loads(request.body)
-    new_amount = float(data.get('amount'))
+    try:
+        data = json.loads(request.body)
+        new_amount = float(data.get('amount'))
+    except (ValueError, TypeError):
+        return JsonResponse({'errorf': 'Invalid bid amount.'}, status=400)
 
-    with transaction.atomic():
-        item = AuctionItem.objects.select_for_update().get(id=item_id)
+    auction = get_object_or_404(Auction, id=item_id)
 
-        if timezone.now() > item.end_time:
-            return JsonResponse({'error': 'Auction is closed.'}, status=400)
-        
-        time_remaining = item.end_time - timezone.now()
+    if auction.status != 'active' or timezone.now() > auction.end_time:
+        return JsonResponse({'error': 'Auction is closed.'}, status=400)
+    
+    if new_amount <= auction.current_price:
+        return JsonResponse({'error': 'Bid must be higher than current price.'}, status=400)
+    
+    time_remaining = auction.end_time - timezone.now()
+    new_end_time = auction.end_time
+    if time_remaining < timedelta(seconds=30):
+        new_end_time = timezone.now() + timedelta(seconds=60)
 
-        if time_remaining < timedelta(seconds=30):
-            item.end_time = timezone.now() + timedelta(seconds=60)
-            item.save()
-            extension_triggered = True
-        else:
-            extension_triggered = False
+    rows_updated = Auction.objects.filter(
+        id=auction.id,
+        version=auction.version
+    ).update(
+        current_price=new_amount,
+        end_time=new_end_time,
+        version=F('version') + 1,
+        updated_at=timezone.now()
+    )
 
-        if not item.is_active:
-            return JsonResponse({'error': 'Auction is closed.'}, status=400)
-        
-        if new_amount <= item.current_price:
-            return JsonResponse({'error': 'Bid must be higher than current price'}, status=400)
-        
-        Bid.objects.create(item=item, user=request.user, amount=new_amount)
-        item.current_price = new_amount
-        item.highest_bidder = request.user
-        item.save()
+    if rows_updated == 0:
+        return JsonResponse({'error': 'Bid conflict: Someone bid before you. Please retry.'}, status=400)
+    
+    Bid.objects.create(
+        auction=auction,
+        user=request.user,
+        amount=new_amount,
+        status='accepted'
+    )
 
-        channel_layer = get_channel_layer()
-        group_name = f'auction_{item.id}'
-
-
-        async_to_sync(channel_layer.group_send)(
-            f'auction_{item_id}',
-            {
-                'type': 'auction_message',
-                'message': f'{request.user.username} placed a bid of Rs.{new_amount}.',
-                'message': f'New high bid: Rs.{new_amount}',
-                'new_price': item.current_price,
-                'new_end_time': item.end_time.isoformat()
-            }
-        )
-
-        async_to_sync(channel_layer.group_send)(
-            'lobby',
-            {
-                'type': 'lobby_update',
-                'item_id': item_id,
-                'new_price': new_amount,
-            }
-        )
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f'auction_{item_id}',
+        {
+            'type': 'auction_message',
+            'message': f'New high bid: Rs.{new_amount}',
+            'new_price': new_amount,
+            'new_end_time': new_end_time.isoformat()
+        }
+    )
 
     return JsonResponse({'status': 'success', 'new_price': new_amount})
-
-
-
-
 
