@@ -19,7 +19,7 @@
                 <h3>{{ auction.title }} <span class="badge">LIVE</span></h3>
                 <P>Current Price: <span id="price-{{ item.id }}" class="price">Rs.{{ auction.current_price }} </span></P>
                 <p>Ends: {{auction.end_time|timeuntil }}</p>
-                <a href="{% url 'room' item.id %}" class="btn">Join Room</a>
+                <a href="{% url 'room' auction.id %}" class="btn">Join Room</a>
             </div>
         {% empty %}
             <p>No live auctions currently.</p>

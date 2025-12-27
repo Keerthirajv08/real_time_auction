@@ -8,6 +8,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import json
 from .models import Auction, Bid
+from django.db.models import F
 
 
 # Create your views here.
@@ -94,4 +95,5 @@ def place_bid(request, item_id):
     )
 
     return JsonResponse({'status': 'success', 'new_price': new_amount})
+
 

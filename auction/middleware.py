@@ -4,7 +4,7 @@ from django.core.cache import cache
 from django.http import JsonResponse
 import time
 
-class RateLimitMidleware:
+class RateLimitMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 

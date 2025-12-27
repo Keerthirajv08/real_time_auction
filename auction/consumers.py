@@ -23,6 +23,16 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         )
         
         await self.accept()
+
+        if self.user.is_authenticated:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'user_status',
+                    'status': 'joined',
+                    'username': self.user.username
+                }
+            )
         
         # Send current auction state on connect
         try:
@@ -46,28 +56,71 @@ class AuctionConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+        if self.user.is_authenticated:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'user_status',
+                    'status': 'left',
+                    'username': self.user.username
+                }
+            )
+
+    async def auction_message(self, event):
+        message = event.get('message', '')
+        new_price = event.get('new_price')
+        new_end_time = event.get('new_end_time')
+
+        await self.send(text_data=json.dumps({
+            'message': message,
+            'new_price': str(new_price) if new_price else None,
+            'new_end_time': new_end_time
+        }))
+
+    async def user_status(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'status_update',
+            'status': event['status'],
+            'username': event['username']
+        }))       
+
     async def receive(self, text_data):
-        try:
-            data = json.loads(text_data)
-            message_type = data.get('type')
+        data = json.loads(text_data)
+        message_type = data.get('type')
+        message = data.get('message')
             
-            if message_type == 'ping':
-                await self.send(text_data=json.dumps({
-                    'type': 'pong',
-                    'timestamp': timezone.now().isoformat()
-                }))
-            
-            elif message_type == 'place_bid':
-                await self.handle_bid(data)
-            
-            elif message_type == 'sync_request':
-                auction_data = await self.get_auction_state()
-                await self.send(text_data=json.dumps({
-                    'type': 'sync_response',
-                    'auction': auction_data
-                }))
-        except json.JSONDecodeError:
-            pass
+        '''if message_type == 'chat_message':
+            await self.send(text_data=json.dumps({
+                'type': 'pong',
+                'timestamp': timezone.now().isoformat()
+            }))
+        
+        elif message_type == 'place_bid':
+            await self.handle_bid(data)
+        
+        elif message_type == 'sync_request':
+            auction_data = await self.get_auction_state()
+            await self.send(text_data=json.dumps({
+                'type': 'sync_response',
+                'auction': auction_data
+            }))'''
+        
+        if message_type == 'chat_message':
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'chat_message',
+                    'message': message,
+                    'username': self.user.username if self.user.is_authenticated else 'Guest'
+                }
+            )
+
+    async def chat_message(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'chat_message',
+            'message': event['message'],
+            'username': event['username']
+        }))
 
     async def handle_bid(self, data):
         if not self.user.is_authenticated:

@@ -13,8 +13,8 @@
 </head>
 <body>
     <a href="{% url 'index' %}" style="text-decoration: none; font-size: 20px;">🏠 Back to Lobby</a>
-    <h1>Auction Item #<span id="room-name">{{ room_name }} </span>-  {{ auction.title }}</h1>
-    <h2>Current Price: Rs.<span id="price">{{ auction.current_price }}</span></h2>
+    <h1>Auction Item #<span id="room-name">{{ room_name }} </span>-  {{auction.title}}</h1>
+    <h2>Current Price: Rs.<span id="price">{{auction.current_price}}</span></h2>
     <h3>Time Remaining: <span id="timer" style="color: red; font-weight: bold;">{{auction.timeuntil}}</span></h3>
 
     <div class="box">
@@ -30,7 +30,7 @@
     <button id="chat-submit" style="padding: 5px;">Send</button>
 
 
-    <!--{% if not item.is_active %}-->
+    
     {% if not auction.status == 'active' %}
         <div style="padding: 20px; text-align: center; margin-bottom: 20px; border-radius: 8px; 
             {% if auction.highest_bidder == request.user %}
@@ -51,7 +51,6 @@
     {% endif %}
 
     
-
     <h3>Live Activity</h3>
     <div id="log" style="height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;">
         {% for bid in previous_bids %}
@@ -64,9 +63,7 @@
         {% endfor %}
     </div>
 
-
     {% csrf_token %}
-    
 
     <script>
         // --- 1. GLOBAL VARIABLES (Define these first!) ---
