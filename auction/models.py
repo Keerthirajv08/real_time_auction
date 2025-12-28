@@ -63,4 +63,27 @@ class Bid(models.Model):
         ordering = ['-timestamp']
 
         
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('outbid', 'You were outbid'),
+        ('winning', 'You are winning'),
+        ('won', 'You won the auction'),
+        ('ending_soon', 'Auction ending soon'),
+        ('new_auction', 'New Auction in watched category'),
+    ]
+
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    Notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    auction = models.ForeignKey(Auction, on_delete=models.CASCADE)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['user', 'is_read']),
+        ]
+
 

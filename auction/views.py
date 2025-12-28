@@ -97,3 +97,4 @@ def place_bid(request, item_id):
     return JsonResponse({'status': 'success', 'new_price': new_amount})
 
 
+

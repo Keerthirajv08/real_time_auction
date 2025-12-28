@@ -1,0 +1,21 @@
+services:
+  web:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-gx$(=iv3c+5k(y+b9a06an#o)4#_@7g*@@r!(!u0g9(d*6or_j
+      - ALLOWED_HOSTS=*
+      - REDIS_URL=redis://redis:6379/0
+    command: python manage.py runserver 0.0.0.0:8000
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    

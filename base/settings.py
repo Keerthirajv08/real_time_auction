@@ -29,7 +29,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
 
 
 # Application definition
@@ -99,12 +99,17 @@ CACHES = {
     }
 }
 
-#For development, we use an In-memory layer 
+
 CHANNEL_LAYERS = {
     "default": {     
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [
+                (
+                    os.getenv('REDIS_HOST', '127.0.0.1'),
+                    int(os.getenv('REDIS_PORT', 6379))
+                )
+            ],
         },
     },
 }

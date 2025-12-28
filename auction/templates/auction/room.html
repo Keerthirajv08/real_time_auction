@@ -13,7 +13,7 @@
 </head>
 <body>
     <a href="{% url 'index' %}" style="text-decoration: none; font-size: 20px;">🏠 Back to Lobby</a>
-    <h1>Auction Item #<span id="room-name">{{ room_name }} </span>-  {{auction.title}}</h1>
+    <h1>Auction Item #<span id="auction-id" >{{auction.id}}</span>-  {{auction.title}}</h1>
     <h2>Current Price: Rs.<span id="price">{{auction.current_price}}</span></h2>
     <h3>Time Remaining: <span id="timer" style="color: red; font-weight: bold;">{{auction.timeuntil}}</span></h3>
 
@@ -49,7 +49,6 @@
             {% endif %}
         </div>
     {% endif %}
-
     
     <h3>Live Activity</h3>
     <div id="log" style="height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;">
