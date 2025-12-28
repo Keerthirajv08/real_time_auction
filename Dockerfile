@@ -20,9 +20,13 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 RUN pip install channels-redis
+RUN pip install whitenoise 
 
 # Copy project
 COPY . .
+
+# Collect static files
+RUN python manage.py collectstatic --noinput --clear
 
 # Expose port Daphne will run on
 EXPOSE 8000 
