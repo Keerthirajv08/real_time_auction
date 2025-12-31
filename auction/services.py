@@ -8,6 +8,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.contrib.auth.models import User 
 
+
 class BidService:
     @staticmethod
     @transaction.atomic
@@ -81,8 +82,8 @@ class NotificationService:
             }
         )
 
-        if previous_bidder.profile.email_notifications:
-            send_email_notification.delay(previous_bidder, notification.id)
+        #if previous_bidder.profile.email_notifications:
+            #send_email_notification.delay(previous_bidder, notification.id)
 
         
     @staticmethod
@@ -114,4 +115,7 @@ class NotificationService:
                         }   
                 }
             )
+
+
+
 

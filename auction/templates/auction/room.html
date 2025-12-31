@@ -182,12 +182,45 @@
             const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
             const csrftoken = csrfInput ? csrfInput.value : '';
             
-            // ... paste the rest of your fetch code ...
-            fetch(`/auction/api/bid/${roomName}/`, {
+            if (!amount) {
+                alert('Please enter a bid amount.');
+                return;
+            }
+
+            fetch(`/auction/api/v1/auctions/${roomName}/bid/`, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
                 body: JSON.stringify({ 'amount': amount })
             })
+
+            .then(async response => {
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const errorText = data.error || JSON.stringify(data);
+                    document.getElementById('status-msg').innerText = "Error:" + errorText;
+                    document.getElementById('status-msg').classList.add('error');
+                } else {
+                    document.getElementById('status-msg').innerText = data.message;
+                    document.getElementById('status-msg').classList.add('success');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('status-msg').innerText = "Error:" + error;
+                document.getElementById('status-msg').classList.add('error');
+            });
+
+
+            // ... paste the rest of your fetch code ...
+            //fetch(`/auction/api/bid/${roomName}/`, {
+                //method: 'POST',
+                //headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
+                //body: JSON.stringify({ 'amount': amount })
+            //})
             // ... handle response ...
         }
     </script>

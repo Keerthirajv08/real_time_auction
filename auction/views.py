@@ -4,14 +4,22 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
 import json
-from .models import Auction, Bid
 from django.db.models import F
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from django.core.exceptions import ValidationError
 
-# Create your views here.
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from .models import Auction, Bid
+from .serializers import AuctionSerializer, BidSerializer
+from .services import BidService
+
+
 def index(request):
     #active_auctions = AuctionItem.objects.filter(is_active=True).order_by('end_time')
     
@@ -24,6 +32,7 @@ def index(request):
         'active_auctions': active_auctions,
         'closed_auctions': closed_auctions
     })
+
 
 def room(request, room_name):
     auction = get_object_or_404(Auction, id=room_name)
@@ -96,5 +105,46 @@ def place_bid(request, item_id):
 
     return JsonResponse({'status': 'success', 'new_price': new_amount})
 
+
+'''class AuctionViewSet(viewsets.ModelViewSet):
+    queryset = Auction.objects.all()
+    serializer_class = AuctionSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def bid(self, request, pk=None):
+        auction = self.get_object()
+        amount = request.data.get('amount')
+
+        try:
+            bid, updated_auction = BidService.place_bid(
+                auction_id=auction.id,
+                user=request.user,
+                amount=amount,
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+        except ValidationError as e:
+            return Response({'error': e.message}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'auction_{auction.id}',
+            {
+                'type': 'auction_message',
+                'message': f'New high bid: Rs.{bid.amount}',
+                'new_price': str(bid.amount),
+                'new_end_time': updated_auction.end_time.isoformat()
+            }
+        )
+
+        return Response({
+            'status': 'success',
+            'new_price': bid.amount,
+            'bid_id': bid.id,   
+        }, status=status.HTTP_200_OK)
+
+'''
 
 
