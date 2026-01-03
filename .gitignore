@@ -12,4 +12,4 @@ venv/
 .env
 
 # OS junk
-.DS_Store
+.DS_Storedb.sqlite3
