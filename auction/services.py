@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -35,7 +36,6 @@ class BidService:
             )
         
         last_bid = auction.bids.filter(status='accepted').order_by('-timestamp').first()
-
         if last_bid and last_bid.user == user:
             raise ValidationError("You are already the highest bidder")
         
@@ -51,12 +51,20 @@ class BidService:
         auction.version += 1
         auction.save()
 
-        log_bid_placed(bid, auction, user, ip_address)
+        log_bid_placed(user, auction, bid, ip_address)
+
+        channel_layer  = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            {'type': 'auction_message',
+             'message': f'New high bid: Rs.{amount}',
+             'new_price': float(amount),
+             'new_end_time': auction.end_time.isoformat()}
+        )
 
         return bid, auction
     
 
-class NotificationService:
+'''class NotificationService:
     @staticmethod
     def notify_outbid(previous_bidder, auction, new_amount):
         notification = Notification.objects.create(
@@ -116,6 +124,6 @@ class NotificationService:
                 }
             )
 
-
+'''
 
 

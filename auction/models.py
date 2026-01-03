@@ -1,6 +1,6 @@
 from django.db import models
-from django.conf import settings
-from django.contrib.auth.models import User 
+#from django.conf import settings
+from django.contrib.auth.models import User
 from django.utils import timezone
 
 
@@ -21,7 +21,7 @@ class Auction(models.Model):
     version = models.IntegerField(default=0)
 
     highest_bidder = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        User,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -41,9 +41,7 @@ class Auction(models.Model):
     
    
 class Bid(models.Model):
-    #item = models.ForeignKey(AuctionItem, on_delete=models.CASCADE, related_name='bids')
     auction = models.ForeignKey(Auction, on_delete=models.CASCADE, related_name='bids')
-    #user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -72,7 +70,7 @@ class Notification(models.Model):
         ('new_auction', 'New Auction in watched category'),
     ]
 
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     Notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
     auction = models.ForeignKey(Auction, on_delete=models.CASCADE)
     message = models.TextField()
@@ -85,5 +83,7 @@ class Notification(models.Model):
             models.Index(fields=['user', '-created_at']),
             models.Index(fields=['user', 'is_read']),
         ]
+
+
 
 

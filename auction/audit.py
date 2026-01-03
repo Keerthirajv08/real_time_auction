@@ -13,3 +13,5 @@ def log_bid_placed(user, auction, bid, ip_address):
         'ip_address': ip_address,
         'timestamp': bid.timestamp.isoformat()
     })
+
+    

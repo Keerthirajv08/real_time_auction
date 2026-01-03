@@ -11,13 +11,10 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.core.exceptions import ValidationError
 
-from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
+from .services import BidService
 
 from .models import Auction, Bid
-from .serializers import AuctionSerializer, BidSerializer
-from .services import BidService
+
 
 
 def index(request):
@@ -57,9 +54,36 @@ def place_bid(request, item_id):
         data = json.loads(request.body)
         new_amount = float(data.get('amount'))
     except (ValueError, TypeError):
-        return JsonResponse({'errorf': 'Invalid bid amount.'}, status=400)
+        return JsonResponse({'error': 'Invalid bid amount.'}, status=400)
+    
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    
+    try:
+        bid, auction = BidService.place_bid(
+            auction_id=item_id,
+            user=request.user,
+            amount=new_amount,
+            ip_address=ip
+        )
+        
+        return JsonResponse({
+            'status': 'success',
+            'new_price': bid.amount,
+            'new_end_time': auction.end_time.isoformat()
+        })
 
-    auction = get_object_or_404(Auction, id=item_id)
+    except ValidationError as e:
+        return JsonResponse({'error': str(e.message)}, status=400)
+    
+    except Exception as e:
+        return JsonResponse({'error': 'An internal error occured.'}, status=500)
+
+
+    '''auction = get_object_or_404(Auction, id=item_id)
 
     if auction.status != 'active' or timezone.now() > auction.end_time:
         return JsonResponse({'error': 'Auction is closed.'}, status=400)
@@ -103,7 +127,7 @@ def place_bid(request, item_id):
         }
     )
 
-    return JsonResponse({'status': 'success', 'new_price': new_amount})
+    return JsonResponse({'status': 'success', 'new_price': new_amount})'''
 
 
 '''class AuctionViewSet(viewsets.ModelViewSet):

@@ -4,6 +4,7 @@ from django.core.cache import cache
 from django.http import JsonResponse
 import time
 
+
 class RateLimitMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -14,11 +15,11 @@ class RateLimitMiddleware:
                 return JsonResponse(
                     {'error': 'Rate limit exceeded. Please try again later.'},
                     status=429
-                )
-            
+                )           
         response = self.get_response(request)
         return response
-    
+
+
     def check_rate_limit(self, request):
         user_id = request.user.id if request.user.is_authenticated else None
         ip = self.get_client_ip(request)
@@ -43,4 +44,5 @@ class RateLimitMiddleware:
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+
 
