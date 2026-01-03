@@ -1,4 +1,8 @@
+{% extends 'auction/base.html' %}
 {% load static %}
+
+
+{% block content %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -20,35 +24,38 @@
     <div class="box">
         <h3>Place your bid</h3>
         <input type="number" id="bid-amount" placeholder="Enter amount (e.g. 150.00)">
-        <button onclick="submitBid()">Place Bid</button>
+        <button onclick="submitBid()" type="submit" class=" bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200">
+            Place Bid
+        </button>
         <p id="status-msg"></p>
     </div>
 
     <hr>
     <h3>Chat</h3>
     <input id="chat-input" type="text" placeholder="Type a message..." style="width:70%; padding:5px;">
-    <button id="chat-submit" style="padding: 5px;">Send</button>
+    <button id="chat-submit" style="padding: 5px;" type="submit" class=" bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200">
+        Send
+    </button>
 
 
     
-    {% if not auction.status == 'active' %}
-        <div style="padding: 20px; text-align: center; margin-bottom: 20px; border-radius: 8px; 
-            {% if auction.highest_bidder == request.user %}
-                background-color: #d4edda; color: #155724; border: 2px solid #c3e6cb;
-            {% else %}
-                background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb;
-            {% endif %}">
-            
-            <h1>Auction Closed</h1>
-            {% if auction.highest_bidder == request.user %}
-                <h2>🎉 CONGRATULATIONS! YOU WON! 🎉</h2>
-                <p>You secured this item for <strong>Rs.{{ auction.current_price }}</strong></p>
-            {% else %}
-                <h3>Winner: {{ auction.highest_bidder.username|default:"No one" }}</h3>
-                <p>Better luck next time!</p>
-            {% endif %}
+    {% if auction.status == 'closed' %}
+        {% if auction.highest_bidder == request.user %}
+        <div style="padding: 20px; text-align: center; margin-bottom: 20px; border-radius: 8px; background-color: #d4edda; color: #155724; border: 2px solid #c3e6cb">
+            <h1>Auction Closed!</h1>
+            <h2>🎉 CONGRATULATIONS! YOU WON! 🎉</h2>
+            <p>You secured this bid: <strong> Rs.{{auction.current_price}}</strong></p>
         </div>
+    {% else %}
+        <div style="padding: 20px; text-align: center; margin-bottom: 20px; border-radius: 8px; background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb;">
+            <h1>Auction Closed</h1>
+            <h3>Winner: {{auction.highest_bidder.username }}</h3>
+            <p>Rs.{{auction.current_price}} was the highest bid.</p>
+            <p>Better Luck next time!</p>
+        </div>
+        {% endif %}
     {% endif %}
+
     
     <h3>Live Activity</h3>
     <div id="log" style="height: 200px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;">
@@ -63,6 +70,8 @@
     </div>
 
     {% csrf_token %}
+
+
 
     <script>
         // --- 1. GLOBAL VARIABLES (Define these first!) ---
@@ -214,18 +223,17 @@
                 document.getElementById('status-msg').classList.add('error');
             });
 
-
-            // ... paste the rest of your fetch code ...
-            //fetch(`/auction/api/bid/${roomName}/`, {
-                //method: 'POST',
-                //headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrftoken},
-                //body: JSON.stringify({ 'amount': amount })
-            //})
-            // ... handle response ...
+        function addLog(message) {
+            const log = document.getElementById('activity-log');
+            const entry = document.createElement('div');
+            entry.className = "flex justify-between items-center text-xs border-b border-gray-100 pb-2 fade-in";
+            entry.innerHTML = `<span>${message}</span> <span class="text-gray-400">${new Date().toLocaleTimeString()}</span>`;
+            log.prepend(entry);
+            }
         }
     </script>
 </body>
 </html>
-
+{% endblock %}
 
 

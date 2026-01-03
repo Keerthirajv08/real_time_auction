@@ -54,15 +54,19 @@ class BidService:
         log_bid_placed(user, auction, bid, ip_address)
 
         channel_layer  = get_channel_layer()
+
         async_to_sync(channel_layer.group_send)(
-            {'type': 'auction_message',
-             'message': f'New high bid: Rs.{amount}',
-             'new_price': float(amount),
-             'new_end_time': auction.end_time.isoformat()}
+            f'auction_{auction.id}',
+            {
+                'type': 'auction_message',
+                'message': f'New high bid: Rs.{amount} by {user.username}',
+                'new_price': str(amount),
+                'new_end_time': auction.end_time.isoformat() if auction.end_time else None
+            }
         )
 
         return bid, auction
-    
+ 
 
 '''class NotificationService:
     @staticmethod

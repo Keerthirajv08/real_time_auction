@@ -1,7 +1,12 @@
+{% extends 'auction/base.html' %}
+
+{% block content %}
 <!DOCTYPE html>
 <html>
 <head>
     <title>Auction Lobby</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { font-family: sans-serif; padding: 20px; background-color: #f4f4f4;}
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap:20px;}
@@ -69,5 +74,6 @@
     </script>
 </body>
 </html>
+{% endblock %}
 
 

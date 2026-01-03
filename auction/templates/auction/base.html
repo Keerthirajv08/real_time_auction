@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Auction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0;} to { opacity: 1;}}
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 font-sans">
+
+    <nav class="bg-white shadow-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold text-blue-600 hover:text-blue-800 transition">
+                <i class="fas fa-gavel mr-2"></i>AuctionHouse
+            </a>
+            <div>
+                {% if user.is_authenticated %}
+                    <span class="mr-4 text-gray-600">Hello, <b>{{ user.username }}</b></span>
+                    <a href="{% url 'logout' %}" class="text-red-500 hover:text-red-700 font-medium">Logout</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="text-gray-600 hover:text-blue-600 font-medium mr-4">Login</a>
+                    <a href="{% url 'signup' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium transition">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-6 py-8">
+        {% block content%}{% endblock %}
+    </main>
+
+    <footer class="bg-gray-800 text-white text-center py-6 mt-12">
+        <p>&copy; 2026 AuctionHouse. All rights reserved.</p>
+    </footer>
+</body>
+</html>
