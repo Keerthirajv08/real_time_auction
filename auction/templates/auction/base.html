@@ -6,36 +6,98 @@
     <title>Live Auction</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0;} to { opacity: 1;}}
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Dropdown transition */
+        .dropdown-menu { display: none; }
+        .dropdown-menu.show { display: block; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen text-gray-800 font-sans">
+<body class="bg-gray-100 min-h-screen font-sans flex flex-col">
 
-    <nav class="bg-white shadow-md">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="/" class="text-2xl font-bold text-blue-600 hover:text-blue-800 transition">
+    <nav class="bg-white shadow-md relative z-50">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            
+            <a href="/" class="text-2xl font-bold text-blue-600 hover:text-blue-800 transition flex items-center">
                 <i class="fas fa-gavel mr-2"></i>AuctionHouse
             </a>
-            <div>
+
+            <div class="flex items-center space-x-4">
+                
                 {% if user.is_authenticated %}
-                    <span class="mr-4 text-gray-600">Hello, <b>{{ user.username }}</b></span>
-                    <a href="{% url 'logout' %}" class="text-red-500 hover:text-red-700 font-medium">Logout</a>
+                    <div class="relative">
+                        <button onclick="toggleDropdown()" class="flex items-center focus:outline-none hover:bg-gray-100 px-3 py-2 rounded-lg transition">
+                            <span class="mr-2 font-medium text-gray-700">{{ user.username }}</span>
+                            <div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+                                {{ user.username|first|upper }}
+                            </div>
+                            <i class="fas fa-chevron-down ml-2 text-xs text-gray-500"></i>
+                        </button>
+
+                        <div id="userDropdown" class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 border border-gray-100">
+                            <a href="{% url 'dashboard' %}" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                                <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+                            </a>
+                            
+                            <a href="{% url 'about' %}" class="block px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                                <i class="fas fa-info-circle mr-2"></i> About Us
+                            </a>
+
+                            <div class="border-t border-gray-100 my-1"></div>
+                            
+                            <a href="{% url 'logout' %}" class="block px-4 py-2 text-red-600 hover:bg-red-50">
+                                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+
                 {% else %}
-                    <a href="{% url 'login' %}" class="text-gray-600 hover:text-blue-600 font-medium mr-4">Login</a>
-                    <a href="{% url 'signup' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium transition">Sign Up</a>
+                    <a href="{% url 'about' %}" class="text-gray-600 hover:text-blue-600 font-medium">About</a>
+                    <a href="{% url 'login' %}" class="text-gray-600 hover:text-blue-600 font-medium">Login</a>
+                    <a href="{% url 'signup' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition">Sign Up</a>
                 {% endif %}
             </div>
         </div>
     </nav>
 
-    <main class="container mx-auto px-6 py-8">
-        {% block content%}{% endblock %}
+    <main class="flex-grow container mx-auto px-6 py-8">
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                <div class="p-4 rounded-md shadow-sm mb-2 {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-gray-800 text-white text-center py-6 mt-12">
-        <p>&copy; 2026 AuctionHouse. All rights reserved.</p>
+    <footer class="bg-gray-800 text-white text-center py-6 mt-auto">
+        <p class="text-sm">&copy; 2026 AuctionHouse. All rights reserved.</p>
     </footer>
+
+    <script>
+        function toggleDropdown() {
+            const menu = document.getElementById('userDropdown');
+            menu.classList.toggle('show');
+        }
+
+        // Close dropdown if clicked outside
+        window.onclick = function(event) {
+            if (!event.target.closest('.relative')) {
+                const dropdowns = document.getElementsByClassName("dropdown-menu");
+                for (let i = 0; i < dropdowns.length; i++) {
+                    const openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+    </script>
 </body>
 </html>

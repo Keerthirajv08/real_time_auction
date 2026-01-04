@@ -21,6 +21,29 @@
     <h2>Current Price: Rs.<span id="price">{{auction.current_price}}</span></h2>
     <h3>Time Remaining: <span id="timer" style="color: red; font-weight: bold;">{{auction.timeuntil}}</span></h3>
 
+    <div class="mb-4">
+        <a href="{% url 'toggle_watchlist' auction.id %}" class="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center">
+            {% if is_watched %}
+                <i class="fas fa-heart text-red-500 mr-2"></i> Remove from Watchlist
+            {% else %}
+                <i class="far fa-heart mr-2"></i> Add to Watchlist
+            {% endif %}
+        </a>
+    </div>
+
+    <div class="md:col-span-2 space-y-6">   
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden h-96 flex items-center justify-center bg-gray-100 border border-gray-200">
+            {% if item.image %}
+                <img src="{{ item.image.url }}" alt="{{ item.title }}" class="w-full h-full object-contain">
+            {% else %}
+                <div class="text-center">
+                    <i class="fas fa-image text-6xl text-gray-300"></i>
+                    <p class="text-gray-400 mt-2">No image available</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="box">
         <h3>Place your bid</h3>
         <input type="number" id="bid-amount" placeholder="Enter amount (e.g. 150.00)">
@@ -29,6 +52,8 @@
         </button>
         <p id="status-msg"></p>
     </div>
+
+    
 
     <hr>
     <h3>Chat</h3>

@@ -17,7 +17,7 @@ from django.core.exceptions import ValidationError
 
 from .services import BidService
 
-from .models import Auction, Bid
+from .models import Auction, Bid, Watchlist
 
 
 
@@ -38,6 +38,10 @@ def index(request):
 def room(request, room_name):
     auction = get_object_or_404(Auction, id=room_name)
 
+    is_watched = False
+    if request.user.is_authenticated:
+        is_watched = Watchlist.objects.filter(auction=auction, user=request.user).exists()
+
     if auction.status == 'active' and timezone.now() > auction.end_time:
         pass
 
@@ -46,11 +50,27 @@ def room(request, room_name):
     return render(request, 'auction/room.html',
                   {'room_name': room_name,
                    'item': auction,
-                   'previous_bids': previous_bids
+                   'auction': auction,
+                   'previous_bids': previous_bids,
+                   'is_watched': is_watched,
                    })
 
 @login_required
 def place_bid(request, item_id):
+    """
+    Place a bid on an auction item.
+
+    Args:
+        request (HttpRequest): The request sent by the client.
+        item_id (int): The id of the auction item to bid on.
+
+    Returns:
+        JsonResponse: A JSON response containing the outcome of the bid.
+
+    Raises:
+        ValidationError: If the bid is invalid or the auction has already ended.
+        Exception: If an internal error occurs.
+    """
     if request.method != 'POST':
         return JsonResponse({'error': 'Only POST allowed.'}, status=405)
     
@@ -86,94 +106,6 @@ def place_bid(request, item_id):
     except Exception as e:
         return JsonResponse({'error': 'An internal error occured.'}, status=500)
 
-
-    '''auction = get_object_or_404(Auction, id=item_id)
-
-    if auction.status != 'active' or timezone.now() > auction.end_time:
-        return JsonResponse({'error': 'Auction is closed.'}, status=400)
-    
-    if new_amount <= auction.current_price:
-        return JsonResponse({'error': 'Bid must be higher than current price.'}, status=400)
-    
-    time_remaining = auction.end_time - timezone.now()
-    new_end_time = auction.end_time
-    if time_remaining < timedelta(seconds=30):
-        new_end_time = timezone.now() + timedelta(seconds=60)
-
-    rows_updated = Auction.objects.filter(
-        id=auction.id,
-        version=auction.version
-    ).update(
-        current_price=new_amount,
-        end_time=new_end_time,
-        version=F('version') + 1,
-        updated_at=timezone.now()
-    )
-
-    if rows_updated == 0:
-        return JsonResponse({'error': 'Bid conflict: Someone bid before you. Please retry.'}, status=400)
-    
-    Bid.objects.create(
-        auction=auction,
-        user=request.user,
-        amount=new_amount,
-        status='accepted'
-    )
-
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        f'auction_{item_id}',
-        {
-            'type': 'auction_message',
-            'message': f'New high bid: Rs.{new_amount}',
-            'new_price': new_amount,
-            'new_end_time': new_end_time.isoformat()
-        }
-    )
-
-    return JsonResponse({'status': 'success', 'new_price': new_amount})'''
-
-
-'''class AuctionViewSet(viewsets.ModelViewSet):
-    queryset = Auction.objects.all()
-    serializer_class = AuctionSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
-    def bid(self, request, pk=None):
-        auction = self.get_object()
-        amount = request.data.get('amount')
-
-        try:
-            bid, updated_auction = BidService.place_bid(
-                auction_id=auction.id,
-                user=request.user,
-                amount=amount,
-                ip_address=request.META.get('REMOTE_ADDR')
-            )
-        except ValidationError as e:
-            return Response({'error': e.message}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f'auction_{auction.id}',
-            {
-                'type': 'auction_message',
-                'message': f'New high bid: Rs.{bid.amount}',
-                'new_price': str(bid.amount),
-                'new_end_time': updated_auction.end_time.isoformat()
-            }
-        )
-
-        return Response({
-            'status': 'success',
-            'new_price': bid.amount,
-            'bid_id': bid.id,   
-        }, status=status.HTTP_200_OK)
-
-'''
 
 def signup_view(request):
     if request.method == 'POST':
@@ -212,4 +144,44 @@ def logout_view(request):
     logout(request)
     messages.info(request, "You have been logged out.")
     return redirect('login')
+
+@login_required
+def dashboard(request):
+    user = request.user
+
+    winning_auctions = Auction.objects.filter(
+        status='active',
+        highest_bidder=user,     
+    ).order_by('-end_time')
+
+    won_auctions = Auction.objects.filter(
+        status='closed',
+        highest_bidder=user,
+    ).order_by('-end_time')
+
+    watchlist = Watchlist.objects.filter(user=user).select_related('auction')
+
+    return render(request, 'auction/dashboard.html', {
+        'winning_auctions': winning_auctions,
+        'won_auctions': won_auctions,
+        'watchlist': watchlist
+    })
+
+@login_required
+def toggle_watchlist(request, auction_id):
+    auction = get_object_or_404(Auction, id=auction_id)
+
+    existing = Watchlist.objects.filter(user=request.user, auction=auction).first()
+
+    if existing:
+        existing.delete()
+        messages.info(request, f"Removed '{auction.title}' from watchlist.")
+    else:
+        Watchlist.objects.create(user=request.user, auction=auction)
+        messages.info(request, f"Added '{auction.title}' to watchlist.")
+
+    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+
+def about(request):
+    return render(request, 'auction/about.html')
 

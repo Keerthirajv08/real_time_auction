@@ -16,7 +16,12 @@ urlpatterns = [
     path('signup/', views.signup_view, name='signup'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('watchlist/toggle/<int:auction_id>/', views.toggle_watchlist, name='toggle_watchlist'),
+    path('about/', views.about, name='about'),
 ]
+
 
 
 

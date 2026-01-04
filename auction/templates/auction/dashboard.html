@@ -1,0 +1,74 @@
+{% extends 'auction/base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold mb-8 text-gray-800">My Dashboard</h1>
+
+    <div class="mb-12">
+        <h2 class="text-xl font-semibold mb-4 text-green-700 border-b pb-2 flex items-center">
+            <i class="fas fa-trophy mr-2"></i> Winning Right Now
+        </h2>
+        {% if winning_auctions %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for auction in winning_auctions %}
+                    {% include 'auction/partials/auction_card.html' with auction=auction bg_color="bg-green-50" border_color="border-green-200" %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500 italic">You are not currently leading any auctions</p>
+        {% endif %}
+    </div>
+
+    <div class="mb-12">
+        <h2 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2 flex items-center">
+            <i class="fas fa-history mr-2"></i>Auction Wins (History)
+        </h2>
+        {% if won_auctions %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for auction in won_auctions %}
+                    <div class="bg-white p-4 rounded-lg shadow border border-blue-100">
+                        <div class="font-bold">{{ auction.title }}</div>
+                        <div class="text-sm text-gray-600">Won for: <span class="font-bold text-green-600">${{ auction.current_price }}</span></div>
+                        <div class="text-xs text-gray-400 mt-2">Ended: {{ auction.end_time|date:"M d, Y" }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500 italic">You have not won any auctions yet</p>
+        {% endif %}
+    </div>
+
+    <div class="mb-12">
+        <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2 flex items-center">
+            <i class="fas fa-eye mr-2"></i> My Watchlist
+        </h2>
+        {% if watchlist %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for item in watchlist %}
+                    <div class="bg-white rounded-lg shadow p-4 relative hover:shadow-md transition">
+                        <a href="{% url 'room' item.auction.id %}" class="block">
+                            <div class="h-32 bg-gray-200 rounded mb-3 overflow-hidden">
+                                {% if item.auction.image %}
+                                    <img src="{{ item.auction.image.url }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="flex items-center justify-center h-full text-gray-400"><i class="fas fa-image"></i></div>
+                                {% endif %}
+                            </div>
+                            <h3 class="font-bold text-sm truncate">{{ item.auction.title }}</h3>
+                            <p class="text-blue-600 font-bold text-sm">${{ item.auction.current_price }}</p>
+                        </a>
+                        
+                        <a href="{% url 'toggle_watchlist' item.auction.id %}" 
+                           class="absolute top-2 right-2 bg-white rounded-full p-1 shadow text-red-500 hover:text-red-700"
+                           title="Remove from watchlist">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500 italic">Your watchlist is empty.</p>
+        {% endif %}
+    </div>         
+</div>
+{% endblock %}

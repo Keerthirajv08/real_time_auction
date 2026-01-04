@@ -7,6 +7,7 @@ from django.utils import timezone
 # Create your models here.
 class Auction(models.Model):
     title = models.CharField(max_length=200)
+    image = models.ImageField(upload_to='auctions/', blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     current_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     min_increment = models.DecimalField(max_digits=10, decimal_places=2, default=1.00)
@@ -84,6 +85,17 @@ class Notification(models.Model):
             models.Index(fields=['user', 'is_read']),
         ]
 
+class Watchlist(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='watchlist')
+    auction = models.ForeignKey(Auction, on_delete=models.CASCADE, related_name='watched_by')
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('user', 'auction')
+
+    def __str__(self):
+        return f"{self.user.username} watching {self.auction.title}"
+    
+    
 
 
