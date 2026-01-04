@@ -22,3 +22,8 @@ celerybeat-schedule.db
 celerybeat-schedule.dat
 celerybeat-schedule.bak
 celerybeat.pid
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+celerybeat-schedule
+
+datadump.json
