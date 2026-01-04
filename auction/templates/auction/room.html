@@ -1,7 +1,6 @@
 {% extends 'auction/base.html' %}
 {% load static %}
 
-
 {% block content %}
 <!DOCTYPE html>
 <html>
@@ -15,7 +14,12 @@
         .error { color: red;}
     </style>
 </head>
-<body>
+<div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div class="md:col-span-2">     
+    </div>
+
+
+    <body>
     <a href="{% url 'index' %}" style="text-decoration: none; font-size: 20px;">🏠 Back to Lobby</a>
     <h1>Auction Item #<span id="auction-id" >{{auction.id}}</span>-  {{auction.title}}</h1>
     <h2>Current Price: Rs.<span id="price">{{auction.current_price}}</span></h2>
@@ -58,7 +62,7 @@
     <hr>
     <h3>Chat</h3>
     <input id="chat-input" type="text" placeholder="Type a message..." style="width:70%; padding:5px;">
-    <button id="chat-submit" style="padding: 5px;" type="submit" class=" bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200">
+    <button id="chat-submit" type="submit" class=" bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200">
         Send
     </button>
 
@@ -258,7 +262,9 @@
         }
     </script>
 </body>
+</div>
 </html>
+
 {% endblock %}
 
 

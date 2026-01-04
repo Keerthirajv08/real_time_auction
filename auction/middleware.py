@@ -1,9 +1,7 @@
 #add security and logging to the django settings
-
 from django.core.cache import cache
 from django.http import JsonResponse
 import time
-
 
 class RateLimitMiddleware:
     def __init__(self, get_response):
@@ -18,7 +16,6 @@ class RateLimitMiddleware:
                 )           
         response = self.get_response(request)
         return response
-
 
     def check_rate_limit(self, request):
         user_id = request.user.id if request.user.is_authenticated else None

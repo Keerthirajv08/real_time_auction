@@ -3,9 +3,6 @@ from django.contrib import admin
 # Register your models here.
 from auction.models import Auction, Bid
 
-#admin.site.register(Auction)
-#admin.site.register(Bid)
-
 @admin.register(Auction)
 class AuctionAdmin(admin.ModelAdmin):
     list_display = ('title', 'description', 'current_price', 'end_time', 'status', 'version')

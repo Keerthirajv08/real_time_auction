@@ -44,8 +44,7 @@ class AuctionViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"DEBUG ERROR: {str(e)}")
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-          
+        
 class BidViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Bid.objects.all().order_by('-timestamp')
     serializer_class = BidSerializer

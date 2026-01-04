@@ -3,7 +3,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-
 # Create your models here.
 class Auction(models.Model):
     title = models.CharField(max_length=200)
@@ -37,8 +36,7 @@ class Auction(models.Model):
             models.Index(fields=['created_at']),
         ]
     def __str__(self):
-        return f"{self.title} (v{self.version})"
-    
+        return f"{self.title} (v{self.version})"  
    
 class Bid(models.Model):
     auction = models.ForeignKey(Auction, on_delete=models.CASCADE, related_name='bids')
@@ -59,8 +57,7 @@ class Bid(models.Model):
         ]
         
         ordering = ['-timestamp']
-
-        
+     
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
         ('outbid', 'You were outbid'),

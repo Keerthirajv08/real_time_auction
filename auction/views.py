@@ -19,8 +19,6 @@ from .services import BidService
 
 from .models import Auction, Bid, Watchlist
 
-
-
 def index(request):
     #active_auctions = AuctionItem.objects.filter(is_active=True).order_by('end_time')
     
@@ -33,7 +31,6 @@ def index(request):
         'active_auctions': active_auctions,
         'closed_auctions': closed_auctions
     })
-
 
 def room(request, room_name):
     auction = get_object_or_404(Auction, id=room_name)
@@ -138,7 +135,6 @@ def login_view(request):
     else:
         form = AuthenticationForm()
     return render(request, 'auction/login.html', {'form': form})
-
 
 def logout_view(request):
     logout(request)

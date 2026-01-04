@@ -22,7 +22,7 @@
         {% for auction in active_auctions %}
             <div class="card">
                 <h3>{{ auction.title }} <span class="badge">LIVE</span></h3>
-                <P>Current Price: <span id="price-{{ item.id }}" class="price">Rs.{{ auction.current_price }} </span></P>
+                <p>Current Price: <span id="price-{{ item.id }}" class="price">Rs.{{ auction.current_price }} </span></p>
                 <p>Ends: {{auction.end_time|timeuntil }}</p>
                 <a href="{% url 'room' auction.id %}" class="btn">Join Room</a>
             
@@ -57,8 +57,7 @@
             <div class="card" style="opacity:0.7;">
                 <h3>{{ auction.title }} (closed)</h3>
                 <p>Sold for: Rs.{{ auction.current_price }}</p>
-                <p>Winner: {{ auction.highest_bidder.username|default:"No One" }}</p>
-                <a href="{% url 'room' item.id %}" class="btn" style="background: gray;">View Results</a>
+                <p>Winner: {{ auction.highest_bidder.username }}</p>
             </div>
         {% empty %}
             <p>No closed auctions yet.</p>

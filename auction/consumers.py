@@ -9,30 +9,35 @@ from .services import BidService
 from .models import Auction, Bid
 from .serializers import serialize_auction
 
-
 class AuctionConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f'auction_{self.room_name}'
         self.user = self.scope['user']
-        
-        # Join auction group
+       
+        # Join  the public auction room
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
+
+        #2. Join a private user group (for outbid notifications)
+        if self.user.is_authenticated:
+            self.user_group_name = f"user_{self.user.id}"
+            await self.channel_layer.group_add(
+                self.user_group_name,
+                self.channel_name
+            )
+
+            #3. optional: join status shown to admin only
+            self.admin_group_name = f"admin_{self.room_name}"
+            if self.user.is_staff:
+                await self.channel_layer.group_add(
+                    self.admin_group_name,
+                    self.channel_name
+                )
         
         await self.accept()
-
-        if self.user.is_authenticated:
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'user_status',
-                    'status': 'joined',
-                    'username': self.user.username
-                }
-            )
         
         # Send current auction state on connect
         try:
@@ -42,28 +47,38 @@ class AuctionConsumer(AsyncWebsocketConsumer):
                 'auction': auction_data,
                 'server_time': timezone.now().isoformat()
             }))
-        except Exception:
-            await self.close()
-            return
+
+            #5. OPTIONAL: Send private connection confirmation
+            if self.user.is_authenticated:
+                await self.send(text_data=json.dumps({
+                    'type': 'private_connection_established',
+                    'user_id': self.user.id,
+                    'message': f'Connected to auction {self.room_name}'
+                }))
+
+        except Exception as e:
+            await self.send(text_data=json.dumps({
+                'type': 'connection_error', 
+                'error': str(e),
+                }))
+            
 
         # Track active connection
         await self.track_connection(True)
 
     async def disconnect(self, close_code):
-        await self.track_connection(False)
+        #leave the public auction room
+        #await self.track_connection(False)
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
 
+        #leave the private user group
         if self.user.is_authenticated:
-            await self.channel_layer.group_send(
+            await self.channel_layer.group_discard(
                 self.room_group_name,
-                {
-                    'type': 'user_status',
-                    'status': 'left',
-                    'username': self.user.username
-                }
+                self.channel_name
             )
 
     async def auction_message(self, event):
@@ -89,22 +104,6 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         message_type = data.get('type')
         message = data.get('message')
             
-        '''if message_type == 'chat_message':
-            await self.send(text_data=json.dumps({
-                'type': 'pong',
-                'timestamp': timezone.now().isoformat()
-            }))
-        
-        elif message_type == 'place_bid':
-            await self.handle_bid(data)
-        
-        elif message_type == 'sync_request':
-            auction_data = await self.get_auction_state()
-            await self.send(text_data=json.dumps({
-                'type': 'sync_response',
-                'auction': auction_data
-            }))'''
-        
         if message_type == 'chat_message':
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -213,5 +212,10 @@ class AuctionConsumer(AsyncWebsocketConsumer):
             'count': event['count']
         }))
 
-
+    async def user_notification(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'notification',
+            'message': event['message'],
+            'notification_type': event['notification_type']
+        }))
 
