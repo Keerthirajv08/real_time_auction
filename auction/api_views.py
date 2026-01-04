@@ -8,6 +8,7 @@ from .models import Auction, Bid
 from .serializers import AuctionSerializer, BidSerializer
 from .services import BidService
 
+from rest_framework.throttling import UserRateThrottle, ScopedRateThrottle
 
 class AuctionViewSet(viewsets.ModelViewSet):
     queryset = Auction.objects.all().order_by('-created_at')
@@ -15,11 +16,12 @@ class AuctionViewSet(viewsets.ModelViewSet):
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    @action(detail=True, methods=['POST'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=['POST'], permission_classes=[permissions.IsAuthenticated], throttle_classes=[ScopedRateThrottle])
     def bid(self, request, pk=None):
-        print(f"DEBUG: Received data:{request.data}")
-        print(f"DEBUG: Content Type: {request.content_type}")
+        #print(f"DEBUG: Received data:{request.data}")
+        #print(f"DEBUG: Content Type: {request.content_type}")
         auction = self.get_object()
+        self.throttle_scope = 'bidding'
 
         amount_str = request.data.get('amount')
         if amount_str is None:

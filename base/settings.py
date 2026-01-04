@@ -202,7 +202,16 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    ]
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '10/minute',        #Guests: 10 reqs/minute
+        'user': '1000/day',     # General users: 1000 reqs/day
+        'bidding': '1/second',      # limit the number of bids per second
+    }
 }
 
 

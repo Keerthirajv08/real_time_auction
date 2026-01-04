@@ -11,7 +11,6 @@ class Auction(models.Model):
     description = models.TextField(blank=True, null=True)
     current_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     min_increment = models.DecimalField(max_digits=10, decimal_places=2, default=1.00)
-    version = models.IntegerField(default=0)
     end_time = models.DateTimeField()
     status = models.CharField(
         max_length=20, 
@@ -26,7 +25,7 @@ class Auction(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='Winning_auctions'
+        related_name='winning_auctions'
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -72,7 +71,7 @@ class Notification(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    Notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
     auction = models.ForeignKey(Auction, on_delete=models.CASCADE)
     message = models.TextField()
     is_read = models.BooleanField(default=False)
