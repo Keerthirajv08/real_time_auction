@@ -13,3 +13,12 @@ venv/
 
 # OS junk
 .DS_Storedb.sqlite3
+
+# ... existing ignores ...
+
+# Celery Beat Schedule and PID files
+celerybeat-schedule
+celerybeat-schedule.db
+celerybeat-schedule.dat
+celerybeat-schedule.bak
+celerybeat.pid
