@@ -31,6 +31,26 @@ services:
     ports:
       - "5432:5432"
 
+  celery_worker:
+    build: .
+    command: celery -A base worker -l info -P eventlet
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+    env_file: .env
+
+  celery_beat:
+    build: .
+    command: celery -A base beat -l info -P eventlet
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+    env_file: .env
+
 volumes:
   postgres_data:
 
