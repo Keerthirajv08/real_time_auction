@@ -10,3 +10,6 @@ db.sqlite3
 .git
 .gitignore
 .DS_Store
+media/
+*.log
+celerybeat-schedule*

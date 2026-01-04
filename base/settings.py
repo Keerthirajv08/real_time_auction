@@ -208,9 +208,10 @@ REST_FRAMEWORK = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
 
 #CELERY SETTINGS
-CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"   #"redis://redis:6379/0" use this for docker 
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:6379/0"   #"redis://redis:6379/0" use this for docker 
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
