@@ -17,7 +17,31 @@
     </style>
 </head>
 <body>
-    <h1>🔥 Live Auctions</h1>
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        
+
+        <form method="GET" action="{% url 'index' %}" class="w-full md:w-auto flex shadow-sm">
+            <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search items..." 
+                    class="px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-64">
+            <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-r-lg hover:bg-blue-700 transition duration-200 font-medium">
+                <i class="fas fa-search"></i>
+            </button>
+
+            {% if query %}
+            <a href="{% url 'index' %}" class="ml-2 flex items-center justify-center px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg border border-red-200 transition " title="Clear Search">
+                <i class="fas fa-times"></i>
+            </a>
+            {% endif %}
+        </form>
+        <h1 class="text-3xl font-bold">💠 Live Auctions </h1>
+    </div>
+
+    {% if query %}
+        <p class="text-gray-600 mb-4">
+            Found {{ active_auctions|length }} active results for "<strong>{{query}} </strong>"
+        </p>
+    {% endif %}
+
     <div class="grid">
         {% for auction in active_auctions %}
             <div class="card">
@@ -51,7 +75,31 @@
 
     <hr style="margin: 40px 0;">
 
+    <div class="container mt-4">
+    <h2>🔥 Trending Now (Real-Time)</h2>
+    <hr style="margin:5px 0;">
+    <p class="text-muted">Most recently viewed by other users.</p>
+    
+    <div class="row">
+        {% for auction in auctions %}
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <img src="{{ auction.image.url }}" class="card-img-top" alt="{{ auction.title }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ auction.title }}</h5>
+                        <p class="card-text">Price: ${{ auction.current_price }}</p>
+                        <a href="{% url 'auction_details' auction.id %}" class="btn btn-primary">Bid Now</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    </div>
+
+    <hr style="margin: 40px 0;">
+
     <h2 style="color: gray;">📆 Recent History</h2>
+    <br>
     <div class="grid">
         {% for auction in closed_auctions %}
             <div class="card" style="opacity:0.7;">

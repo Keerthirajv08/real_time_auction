@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -18,19 +19,40 @@ from django.core.exceptions import ValidationError
 from .services import BidService
 
 from .models import Auction, Bid, Watchlist
+from .cache import TrendingAuctionCache
 
 def index(request):
-    #active_auctions = AuctionItem.objects.filter(is_active=True).order_by('end_time')
+    query = request.GET.get('q')        #Get the search term from the URL
     
+    #1. Query for active auctions
     active_auctions = Auction.objects.filter(status='active').order_by('end_time')
 
-    #closed_auctions = AuctionItem.objects.filter(is_active=False).order_by('-end_time')[:5]
-    closed_auctions = Auction.objects.filter(status='closed').order_by('-end_time')[:5]
+    #2. Query for closed auctions
+    closed_auctions = Auction.objects.filter(status='closed').order_by('-end_time')
+
+    #3. Apply search filter if query exists
+    if query:
+        search_filter = Q(title__icontains=query) | Q(description__icontains=query)
+        active_auctions = active_auctions.filter(search_filter)
+        closed_auctions = closed_auctions.filter(search_filter)
+
+    closed_auctions = closed_auctions[:5]
+
+    # Fast: fetches IDs from Redis, then objects from DB
+    trending_auctions = TrendingAuctionCache.get_top_items()
+
+    #
+    if not trending_auctions:
+        trending_auctions = Auction.objects.filter(status='active').order_by('-created_at')[:10]    
+
 
     return render(request, 'auction/index.html',{
         'active_auctions': active_auctions,
-        'closed_auctions': closed_auctions
+        'closed_auctions': closed_auctions,
+        'query': query,
+        'trending_auctions': trending_auctions
     })
+
 
 def room(request, room_name):
     auction = get_object_or_404(Auction, id=room_name)
@@ -181,3 +203,10 @@ def toggle_watchlist(request, auction_id):
 def about(request):
     return render(request, 'auction/about.html')
 
+
+def auction_details(request, pk):
+    auction = get_object_or_404(Auction, pk=pk)
+
+    TrendingAuctionCache.record_view(auction.id)
+
+    return render(request, 'auction/room.html', {'auction': auction})
