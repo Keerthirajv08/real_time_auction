@@ -64,7 +64,8 @@ def room(request, room_name):
     if auction.status == 'active' and timezone.now() > auction.end_time:
         pass
 
-    previous_bids = auction.bids.filter(status='accepted').order_by('-timestamp')[:10]
+    #previous_bids = auction.bids.filter(status='accepted').order_by('-timestamp')[:10]
+    previous_bids = auction.bids.select_related('user').filter(status='accepted').order_by('-timestamp')[:10]
 
     return render(request, 'auction/room.html',
                   {'room_name': room_name,

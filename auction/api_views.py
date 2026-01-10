@@ -11,9 +11,9 @@ from .services import BidService
 from rest_framework.throttling import UserRateThrottle, ScopedRateThrottle
 
 class AuctionViewSet(viewsets.ModelViewSet):
-    queryset = Auction.objects.all().order_by('-created_at')
+    #queryset = Auction.objects.all().order_by('-created_at')
+    queryset = Auction.objects.select_related('highest_bidder').prefetch_related('bids__user').all().order_by('-created_at')
     serializer_class = AuctionSerializer
-
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     @action(detail=True, methods=['POST'], permission_classes=[permissions.IsAuthenticated], throttle_classes=[ScopedRateThrottle])
@@ -46,7 +46,8 @@ class AuctionViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
 class BidViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Bid.objects.all().order_by('-timestamp')
+    #queryset = Bid.objects.all().order_by('-timestamp')
+    queryset = Bid.objects.select_related('user', 'auction').all().order_by('-timestamp')
     serializer_class = BidSerializer
     
    

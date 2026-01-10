@@ -54,12 +54,12 @@ class BidService:
         auction.current_price = amount
         auction.version += 1
         auction.save()
-
+       
         log_bid_placed(user, auction, bid, ip_address)
 
         #......[Broadcast to Room].....
         channel_layer  = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
+        '''async_to_sync(channel_layer.group_send)(
             f'auction_{auction.id}',
             {
                 'type': 'auction_message',
@@ -68,7 +68,7 @@ class BidService:
                 'bidder_name': user.username,
                 'new_end_time': auction.end_time.isoformat() if auction.end_time else None
             }
-        )
+        )'''
 
         #2. Notify the OUTBID user (if they are different from current bidder)
         if previous_bidder and previous_bidder != user:
@@ -87,6 +87,20 @@ class BidService:
                     'message': f"⚠️ You have been outbid on {auction.title}! New bid: Rs.{amount}"
                 }
             )
+        
+        def send_websocket_update():
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'auction_{auction.id}',
+                {
+                    'type': 'auction_message',
+                    'message': f'New high bid: Rs. {amount} by {user.username}',
+                    'new_price': str(amount),
+                    'new_end_time': auction.end_time.isoformat() if auction.end_time else None
+                }
+            )
+
+        transaction.on_commit(send_websocket_update)
 
         return bid, auction
     
